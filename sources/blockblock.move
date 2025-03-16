@@ -76,7 +76,7 @@ fun init(otw: BLOCKBLOCK, ctx: &mut TxContext) {
     id: object::new(ctx),
     blockblock_id: object::id(&blockblock_yonsei),
     club_cohort: 1,
-    is_recruiting: false,
+    is_recruiting: true,
     members: vector<address>[ctx.sender()],
     is_closed_by_president: false,
     is_closed_by_vice_president: false,
@@ -218,7 +218,7 @@ entry fun close_cohort_by_current_vice_president(blockblock: &BlockblockYonsei, 
   assert!(blockblock.current_cohort == current_vice_president_cap.club_cohort, 100);
 
   assert!(current_cohort.is_recruiting == false, 100);
-  assert!(!current_cohort.is_closed_by_president, 100);
+  assert!(!current_cohort.is_closed_by_vice_president, 100);
 
   current_cohort.is_closed_by_vice_president = true;
 }
@@ -230,7 +230,7 @@ entry fun close_cohort_by_current_treasurer(blockblock: &BlockblockYonsei, curre
   assert!(blockblock.current_cohort == current_treasurer_cap.club_cohort, 100);
 
   assert!(current_cohort.is_recruiting == false, 100);
-  assert!(!current_cohort.is_closed_by_president, 100);
+  assert!(!current_cohort.is_closed_by_treasurer, 100);
 
   current_cohort.is_closed_by_treasurer = true;
 }
