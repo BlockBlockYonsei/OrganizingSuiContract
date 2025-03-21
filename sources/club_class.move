@@ -1,6 +1,8 @@
 
 module blockblock::club_class;
 
+use sui::dynamic_field;
+
 public struct CurrentClass has key, store {
   id: UID,
   blockblock_ys: ID,
@@ -12,6 +14,12 @@ public struct PastClass has key {
   id: UID,
   blockblock_ys: ID,
   class: u64,
+}
+
+// ============================= Action Key
+
+public struct AddMemberKey has store, drop, copy {
+  member: address
 }
 
 // ============================= Functions
@@ -46,6 +54,23 @@ fun new(
 }
 
 // ============================= Methods
+public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
+  dynamic_field::add(&mut class.id, AddMemberKey{member: ctx.sender()}, ctx.sender());
+
+}
+
+public (package) fun set_open_to_join(class: &mut CurrentClass){
+  class.is_open_for_new_members = true;
+}
+
+public (package) fun set_close_to_join(class: &mut CurrentClass){
+  class.is_open_for_new_members = false;
+}
+
+public (package) fun is_open_for_new_members(class: &mut CurrentClass): bool{
+  class.is_open_for_new_members
+}
+
 public (package) fun class(class: &CurrentClass): u64 {
   class.class
 }

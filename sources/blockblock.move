@@ -7,12 +7,13 @@ use sui::dynamic_field;
 
 use blockblock::club_class::{Self, CurrentClass, PastClass};
 use blockblock::executive_member::{Self, ExecutiveMemberCap, ExecutiveMemberTicket, President};
-use blockblock::active_member::{ActiveClubMemberCap, TeamLeaderCap};
-use blockblock::alumni_member::{AlumniCap};
+use blockblock::blockblock_member::{BlockblockMemberCap, TeamLeaderCap};
+use blockblock::alumni::{AlumniCap};
 
 const E_NOT_BLCKBLCK_ID: u64 = 1;
 const E_NOT_CURRENT_CLASS: u64 = 2;
 const E_NOT_EXE_COMMIT_TYPE: u64 = 3;
+const E_CLUB_NOT_OPENED: u64 = 4;
 
 public struct BLOCKBLOCK has drop {}
 
@@ -81,4 +82,39 @@ entry fun confirm_ticket_and_send_member_cap<MemberType: store>(
     let member_address = ticket.member_address().extract();
     let executive_member_cap = executive_member::convert_ticket_to_cap(ticket, ctx);
     executive_member_cap.transfer(member_address);
+}
+
+entry fun open_club_to_join(
+  blockblock_ys: &BlockblockYonsei, 
+  current_class: &mut CurrentClass, 
+  president_cap: &ExecutiveMemberCap<President>, 
+  ){
+    assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
+    assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
+
+    current_class.set_open_to_join();
+}
+
+entry fun close_club_to_join(
+  blockblock_ys: &BlockblockYonsei, 
+  current_class: &mut CurrentClass, 
+  president_cap: &ExecutiveMemberCap<President>, 
+  ){
+    assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
+    assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
+
+    current_class.set_close_to_join();
+}
+
+entry fun request_to_join_club(
+  blockblock_ys: &BlockblockYonsei, 
+  current_class: &mut CurrentClass, 
+  ctx: &TxContext
+  ){
+    assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
+    // assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
+
+    assert!(current_class.is_open_for_new_members(), E_CLUB_NOT_OPENED);
+    
+    current_class.request_to_join(ctx);
 }

@@ -1,4 +1,4 @@
-module blockblock::alumni_member;
+module blockblock::alumni;
 
 public struct AlumniCap has key {
   id: UID,

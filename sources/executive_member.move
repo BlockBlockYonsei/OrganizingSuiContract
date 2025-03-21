@@ -33,7 +33,7 @@ public struct MarketingTeamMember has store{}
 
 // ============================= Action Key
 
-public struct AddMemberKey<phantom MemberType: key> has store, drop, copy {
+public struct AddExecutiveMemberKey<phantom MemberType: key> has store, drop, copy {
   member: address
 }
 public struct ClosingClubKey has store, drop, copy {}
