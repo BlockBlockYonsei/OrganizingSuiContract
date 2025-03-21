@@ -112,8 +112,6 @@ entry fun request_to_join_club(
   ctx: &TxContext
   ){
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
-    // assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
-
     assert!(current_class.is_open_for_new_members(), E_CLUB_NOT_OPENED);
     
     current_class.request_to_join(ctx);

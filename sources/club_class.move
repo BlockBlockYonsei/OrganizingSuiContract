@@ -18,9 +18,7 @@ public struct PastClass has key {
 
 // ============================= Action Key
 
-public struct AddMemberKey has store, drop, copy {
-  member: address
-}
+public struct AddMemberKey has store, drop, copy {}
 
 // ============================= Functions
 
@@ -55,8 +53,13 @@ fun new(
 
 // ============================= Methods
 public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
-  dynamic_field::add(&mut class.id, AddMemberKey{member: ctx.sender()}, ctx.sender());
-
+  if (!dynamic_field::exists_(&class.id, AddMemberKey{})) {
+    dynamic_field::add(&mut class.id, AddMemberKey{}, vector::empty<address>());
+  };
+  dynamic_field::borrow_mut<AddMemberKey, vector<address>>(
+    &mut class.id, 
+    AddMemberKey{}
+  ).push_back(ctx.sender())
 }
 
 public (package) fun set_open_to_join(class: &mut CurrentClass){
