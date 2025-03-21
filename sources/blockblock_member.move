@@ -12,3 +12,14 @@ public struct TeamLeaderCap has key {
   club_class: u64,
   team_name: String
 }
+
+public (package) fun new(club_class: u64, ctx: &mut TxContext): BlockblockMemberCap {
+  BlockblockMemberCap{
+    id: object::new(ctx),
+    club_class
+  }
+}
+
+public (package) fun transfer(cap: BlockblockMemberCap, recipient: address) {
+  transfer::transfer(cap, recipient)
+}

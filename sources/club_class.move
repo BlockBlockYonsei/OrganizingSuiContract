@@ -52,6 +52,10 @@ fun new(
 }
 
 // ============================= Methods
+public (package) fun borrow_member_address_vec(class: &CurrentClass): &vector<address> {
+  dynamic_field::borrow<AddMemberKey, vector<address>>(&class.id, AddMemberKey{})
+}
+
 public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
   if (!dynamic_field::exists_(&class.id, AddMemberKey{})) {
     dynamic_field::add(&mut class.id, AddMemberKey{}, vector::empty<address>());

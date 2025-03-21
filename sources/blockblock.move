@@ -7,7 +7,7 @@ use sui::dynamic_field;
 
 use blockblock::club_class::{Self, CurrentClass, PastClass};
 use blockblock::executive_member::{Self, ExecutiveMemberCap, ExecutiveMemberTicket, President};
-use blockblock::blockblock_member::{BlockblockMemberCap, TeamLeaderCap};
+use blockblock::blockblock_member::{Self, BlockblockMemberCap, TeamLeaderCap};
 use blockblock::alumni::{AlumniCap};
 
 const E_NOT_BLCKBLCK_ID: u64 = 1;
@@ -115,4 +115,22 @@ entry fun request_to_join_club(
     assert!(current_class.is_open_for_new_members(), E_CLUB_NOT_OPENED);
     
     current_class.request_to_join(ctx);
+}
+
+entry fun create_and_send_member_caps(
+  blockblock_ys: &BlockblockYonsei, 
+  current_class: &mut CurrentClass, 
+  president_cap: &ExecutiveMemberCap<President>, 
+  ctx: &mut TxContext
+  ){
+    assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
+    assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
+
+    current_class.borrow_member_address_vec().do_ref!<address,_>(
+      |a| {
+      let cap = blockblock_member::new(current_class.class(), ctx); 
+      let member_address = *a;
+      cap.transfer(member_address);
+      }
+    );
 }
