@@ -5,6 +5,7 @@ use std::type_name;
 use sui::dynamic_field;
 
 use blockblock::executive_member::{President, VicePresident, Treasurer, PlanningTeamLeader, MarketingTeamLeader};
+use sui::event;
 
 const E_NOT_PRESIDENT_EXECUTIVE_MEMBER_TYPE: u64 = 1;
 const E_ALREADY_CLOSED: u64 = 2;
@@ -26,6 +27,15 @@ public struct PastClass has key, store {
   next_class_id: ID
 }
 
+// =============================== Event
+
+public struct CreateNewClass has copy, drop {
+  blockblock_ys: ID,
+  class_id: ID,
+  class: u64,
+
+}
+
 // ============================= Action Key
 
 public struct AddExecutiveMemberKey<phantom MemberType: store> has store, drop, copy {}
@@ -41,12 +51,21 @@ public (package) fun new(
   class: u64,
   ctx: &mut TxContext
 ): CurrentClass {
-  CurrentClass{
+
+  let current_class =CurrentClass{
     id: object::new(ctx),
     blockblock_ys: blockblock_ys_id,
     class: class,
     is_open_for_new_members: false,
-  }
+  };
+
+  event::emit(CreateNewClass{
+    blockblock_ys : blockblock_ys_id,
+    class_id: object::id(&current_class),
+    class: current_class.class,
+  });
+
+  current_class
 }
 
 #[allow(lint(share_owned))]
