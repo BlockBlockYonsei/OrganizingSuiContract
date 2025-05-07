@@ -182,6 +182,7 @@ entry fun send_president_ticket(
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(previous_class.class_past() == previous_president_cap.club_class(), E_NOT_CURRENT_CLASS);
     assert!(previous_class.class_past() + 1 == current_class.class(), E_WRONG_CURRENT_NEXT_CLASS);
+    // next_president는 previous_class의 member 중 한 명이어야 한다.
 
     let president_ticket = executive_member::new_ticket<President>(current_class.class(), ctx);
     president_ticket.tranfer_ticket(next_president);
@@ -198,6 +199,7 @@ entry fun send_back_president_ticket_with_address(
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(previous_class.class_past() + 1 == current_class.class(), E_WRONG_CURRENT_NEXT_CLASS);
     assert!(current_class.class() == next_president_ticket.club_class_ticket(), E_NOT_CURRENT_CLASS);
+    
 
     let mut next_president_ticket = next_president_ticket;
     next_president_ticket.set_member_address(ctx.sender());

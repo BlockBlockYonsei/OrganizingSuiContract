@@ -23,6 +23,7 @@ public struct PastClass has key, store {
   id: UID,
   blockblock_ys: ID,
   class: u64,
+  next_class_id: ID
 }
 
 // ============================= Action Key
@@ -113,7 +114,8 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
   let mut past_class = PastClass {
     id: object::new(ctx),
     blockblock_ys,
-    class
+    class,
+    next_class_id: object::id(next_class)
   };
 
   dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<President>{}, president);
