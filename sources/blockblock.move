@@ -35,13 +35,16 @@ fun init(otw: BLOCKBLOCK, ctx: &mut TxContext) {
   first_club_class.add_executive_member<President>(ctx.sender());
 
   transfer::freeze_object(blockblock_ys);
-  first_club_class.share();
+  transfer::public_share_object(first_club_class);
   first_president_cap.transfer_cap(ctx.sender());
 }
 
 // ========================== Entry Functions
 
-entry fun send_executive_member_ticket<MemberType: store>(
+// ===========================================
+// ========================== Executive Member
+// ===========================================
+entry fun invite_executive_member<MemberType: store>(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &CurrentClass, 
   president_cap: &ExecutiveMemberCap<President>, 
@@ -55,7 +58,7 @@ entry fun send_executive_member_ticket<MemberType: store>(
     ticket.tranfer_ticket(recipient);
 }
 
-entry fun send_back_ticket_with_address<MemberType: store>(
+entry fun send_back_executive_member_ticket<MemberType: store>(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &CurrentClass, 
   ticket: ExecutiveMemberTicket<MemberType>, 
@@ -72,7 +75,7 @@ entry fun send_back_ticket_with_address<MemberType: store>(
     ticket.tranfer_ticket(president_address);
 }
 
-entry fun confirm_ticket_and_transfer_member_cap<MemberType: store>(
+entry fun confirm_executive_member_ticket<MemberType: store>(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &mut CurrentClass, 
   president_cap: &ExecutiveMemberCap<President>, 
@@ -84,16 +87,22 @@ entry fun confirm_ticket_and_transfer_member_cap<MemberType: store>(
     assert!(executive_member::is_executive_member_type<MemberType>(), E_NOT_EXE_COMMIT_TYPE);
 
     let member_address = ticket.member_address().extract();
-    if(type_name::get<MemberType>() != type_name::get<PlanningTeamMember>()
-      && type_name::get<MemberType>() != type_name::get<MarketingTeamMember>()
-    ){
-      current_class.add_executive_member<MemberType>(member_address);
-    };
+    assert!(type_name::get<MemberType>() != type_name::get<PlanningTeamMember>()
+      && type_name::get<MemberType>() != type_name::get<MarketingTeamMember>(), 40404);
+
+    current_class.add_executive_member<MemberType>(member_address);
+
+    let member_cap = blockblock_member::new(current_class.class(), ctx); 
+    member_cap.transfer(member_address);
+
     let executive_member_cap = executive_member::convert_ticket_to_cap(ticket, ctx);
     executive_member_cap.transfer_cap(member_address);
 }
 
-entry fun open_club_to_join(
+// ===========================================
+// ========================== Club Recruitment
+// ===========================================
+entry fun start_club_recruitment(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &mut CurrentClass, 
   president_cap: &ExecutiveMemberCap<President>, 
@@ -101,41 +110,32 @@ entry fun open_club_to_join(
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
 
-    current_class.set_open_to_join();
+    current_class.create_member_recruitment();
 }
 
-entry fun close_club_to_join(
-  blockblock_ys: &BlockblockYonsei, 
-  current_class: &mut CurrentClass, 
-  president_cap: &ExecutiveMemberCap<President>, 
-  ){
-    assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
-    assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
-
-    current_class.set_close_to_join();
-}
-
-entry fun request_to_join_club(
+entry fun apply_to_join_club(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &mut CurrentClass, 
   ctx: &TxContext
   ){
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
-    assert!(current_class.is_open_for_new_members(), E_CLUB_NOT_OPENED);
+    assert!(current_class.recruitment().is_none() , E_CLUB_NOT_OPENED);
     
     current_class.request_to_join(ctx);
 }
 
-entry fun create_and_transfer_member_caps(
+entry fun end_club_recruitment_and_grant_member_caps(
   blockblock_ys: &BlockblockYonsei, 
-  current_class: &CurrentClass, 
+  current_class: &mut CurrentClass, 
   president_cap: &ExecutiveMemberCap<President>, 
   ctx: &mut TxContext
   ){
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
 
-    current_class.borrow_member_address_vec().do_ref!<address,_>(
+    current_class.delete_member_recruitment_and_add_members();
+
+    current_class.members().do_ref!<address,_>(
       |a| {
       let cap = blockblock_member::new(current_class.class(), ctx); 
       let member_address = *a;
@@ -144,7 +144,10 @@ entry fun create_and_transfer_member_caps(
     );
 }
 
-entry fun request_to_close_current_club_class<MemberType: store>(
+// ===========================================
+// ========================== Finalizing Current Class
+// ===========================================
+entry fun finalize_current_class<MemberType: store>(
   blockblock_ys: &BlockblockYonsei, 
   current_class: &mut CurrentClass, 
   executive_member_cap: &ExecutiveMemberCap<MemberType>, 
@@ -155,7 +158,7 @@ entry fun request_to_close_current_club_class<MemberType: store>(
     current_class.request_to_close_current_club<MemberType>();
 }
 
-entry fun close_current_class_and_create_next_class(
+entry fun initiate_class_transition(
   blockblock_ys: &BlockblockYonsei, 
   current_class: CurrentClass, 
   president_cap: &ExecutiveMemberCap<President>, 
@@ -167,10 +170,13 @@ entry fun close_current_class_and_create_next_class(
     let next_club_class = club_class::new(object::id(blockblock_ys), current_class.class() + 1, ctx);
 
     current_class.convert_current_class_to_past_class(&next_club_class, ctx);
-    next_club_class.share();
+    transfer::public_share_object(next_club_class);
 }
 
-entry fun send_president_ticket(
+// ===========================================
+// ========================== Appointment Next Presient
+// ===========================================
+entry fun appoint_president(
   blockblock_ys: &BlockblockYonsei, 
   previous_class: &PastClass, 
   current_class: &CurrentClass, 
@@ -183,12 +189,13 @@ entry fun send_president_ticket(
     assert!(previous_class.class_past() == previous_president_cap.club_class(), E_NOT_CURRENT_CLASS);
     assert!(previous_class.class_past() + 1 == current_class.class(), E_WRONG_CURRENT_NEXT_CLASS);
     // next_president는 previous_class의 member 중 한 명이어야 한다.
+    // 근데 전전 단계는? 전전전 단계는?? 역대 PastClass 중에 있는 member라면 가능하게 해야 함
 
     let president_ticket = executive_member::new_ticket<President>(current_class.class(), ctx);
     president_ticket.tranfer_ticket(next_president);
 }
 
-entry fun send_back_president_ticket_with_address(
+entry fun send_back_president_ticket(
   blockblock_ys: &BlockblockYonsei, 
   previous_class: &PastClass, 
   current_class: &CurrentClass, 
@@ -208,7 +215,7 @@ entry fun send_back_president_ticket_with_address(
     next_president_ticket.tranfer_ticket(previous_president_address)
 }
 
-entry fun confirm_ticket_and_transfer_president_cap(
+entry fun confirm_president_ticket(
   blockblock_ys: &BlockblockYonsei, 
   previous_class: &PastClass, 
   current_class: &mut CurrentClass, 
@@ -223,6 +230,7 @@ entry fun confirm_ticket_and_transfer_president_cap(
 
     let member_address = president_ticket.member_address().extract();
     current_class.add_executive_member<President>(member_address);
+
     let current_president_cap = executive_member::convert_ticket_to_cap(president_ticket, ctx);
     current_president_cap.transfer_cap(member_address);
 }
