@@ -43,8 +43,8 @@ fun init(otw: BLOCKBLOCK, ctx: &mut TxContext) {
 }
 
 // ========================== Entry Functions
-
 // ===========================================
+
 // ========================== Executive Member
 // ===========================================
 entry fun invite_executive_member<MemberType: store>(
@@ -162,6 +162,8 @@ entry fun finalize_current_class<MemberType: store>(
     current_class.request_to_close_current_club<MemberType>();
 }
 
+// #[allow(lint(freeze_wrapped))]
+#[allow(lint(share_owned))]
 entry fun initiate_class_transition(
   blockblock_ys: &BlockblockYonsei, 
   current_class: CurrentClass, 
@@ -211,7 +213,6 @@ entry fun send_back_president_ticket(
     assert!(previous_class.class_past() + 1 == current_class.class(), E_WRONG_CURRENT_NEXT_CLASS);
     assert!(current_class.class() == next_president_ticket.club_class_ticket(), E_NOT_CURRENT_CLASS);
     
-
     let mut next_president_ticket = next_president_ticket;
     next_president_ticket.set_member_address(ctx.sender());
     let previous_president_address = next_president_ticket.president();

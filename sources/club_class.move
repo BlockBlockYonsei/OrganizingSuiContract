@@ -21,11 +21,11 @@ public struct CurrentClass has key, store {
   recruitment: Option<MemberRecruitment>
 }
 
-public struct PastClass has key{
+public struct PastClass has key, store{
   id: UID,
   blockblock_ys: ID,
   class: u64,
-  class_obj: CurrentClass,
+  members: vector<address>,
 }
 
 public struct MemberRecruitment has store {
@@ -41,8 +41,15 @@ public struct NewClassCreated has copy, drop {
   blockblock_ys: ID,
   class_id: ID,
   class: u64,
+}
+
+public struct CurrentClassDeletedAndPastClassCreated has copy, drop {
+  blockblock_ys: ID,
+  past_class_id: ID,
+  class: u64,
 
 }
+
 
 // ============================= Action Key
 
@@ -135,18 +142,21 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
     , E_PRESIDENT_EXECUTIVE_MEMBERS_DID_NOT_CLOSE
   );
 
-  let mut current_class = current_class;
-  let president = dynamic_field::remove<ExecutiveMemberKey<President>, address>(&mut current_class.id, ExecutiveMemberKey<President>{});
-  let vice_president = dynamic_field::remove<ExecutiveMemberKey<VicePresident>, address>(&mut current_class.id, ExecutiveMemberKey<VicePresident>{});
-  let treasurer = dynamic_field::remove<ExecutiveMemberKey<Treasurer>, address>(&mut current_class.id, ExecutiveMemberKey<Treasurer>{});
-  let planning_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<PlanningTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<PlanningTeamLeader>{});
-  let marketing_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<MarketingTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<MarketingTeamLeader>{});
+  let CurrentClass{ mut id, blockblock_ys, class, members, recruitment} = current_class;
+  let president = dynamic_field::remove<ExecutiveMemberKey<President>, address>(&mut id, ExecutiveMemberKey<President>{});
+  let vice_president = dynamic_field::remove<ExecutiveMemberKey<VicePresident>, address>(&mut id, ExecutiveMemberKey<VicePresident>{});
+  let treasurer = dynamic_field::remove<ExecutiveMemberKey<Treasurer>, address>(&mut id, ExecutiveMemberKey<Treasurer>{});
+  let planning_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<PlanningTeamLeader>, address>(&mut id, ExecutiveMemberKey<PlanningTeamLeader>{});
+  let marketing_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<MarketingTeamLeader>, address>(&mut id, ExecutiveMemberKey<MarketingTeamLeader>{});
+
+  id.delete();
+  recruitment.destroy_none();
 
   let mut past_class = PastClass {
     id: object::new(ctx),
-    blockblock_ys: current_class.blockblock_ys,
-    class: current_class.class,
-    class_obj: current_class
+    blockblock_ys,
+    class,
+    members
   };
 
   dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<President>{}, president);
@@ -158,6 +168,12 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
   if (marketing_team_leader.is_some()) {
     dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<MarketingTeamLeader>{}, marketing_team_leader);
   };
+  
+  event::emit(CurrentClassDeletedAndPastClassCreated{
+    blockblock_ys,
+    past_class_id: object::id(&past_class),
+    class,
+  });
 
   transfer::freeze_object(past_class);
 }
