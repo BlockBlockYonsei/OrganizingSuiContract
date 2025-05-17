@@ -34,6 +34,9 @@ fun init(otw: BLOCKBLOCK, ctx: &mut TxContext) {
   let first_president_cap = executive_member::new_cap<President>(1, ctx);
   first_club_class.add_executive_member<President>(ctx.sender());
 
+  let member_cap = blockblock_member::new(first_club_class.class(), ctx); 
+  member_cap.transfer(ctx.sender());
+
   transfer::freeze_object(blockblock_ys);
   transfer::public_share_object(first_club_class);
   first_president_cap.transfer_cap(ctx.sender());
