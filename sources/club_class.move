@@ -134,12 +134,13 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
     && dynamic_field::exists_(&current_class.id, FinalizingCurrentClubKey<Treasurer>{})
     , E_PRESIDENT_EXECUTIVE_MEMBERS_DID_NOT_CLOSE
   );
+
   let mut current_class = current_class;
   let president = dynamic_field::remove<ExecutiveMemberKey<President>, address>(&mut current_class.id, ExecutiveMemberKey<President>{});
   let vice_president = dynamic_field::remove<ExecutiveMemberKey<VicePresident>, address>(&mut current_class.id, ExecutiveMemberKey<VicePresident>{});
   let treasurer = dynamic_field::remove<ExecutiveMemberKey<Treasurer>, address>(&mut current_class.id, ExecutiveMemberKey<Treasurer>{});
-  let planning_team_leader = dynamic_field::remove<ExecutiveMemberKey<PlanningTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<PlanningTeamLeader>{});
-  let marketing_team_leader = dynamic_field::remove<ExecutiveMemberKey<MarketingTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<MarketingTeamLeader>{});
+  let planning_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<PlanningTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<PlanningTeamLeader>{});
+  let marketing_team_leader = dynamic_field::remove_if_exists<ExecutiveMemberKey<MarketingTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<MarketingTeamLeader>{});
 
   let mut past_class = PastClass {
     id: object::new(ctx),
@@ -151,8 +152,12 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
   dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<President>{}, president);
   dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<VicePresident>{}, vice_president);
   dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<Treasurer>{}, treasurer);
-  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<PlanningTeamLeader>{}, planning_team_leader);
-  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<MarketingTeamLeader>{}, marketing_team_leader);
+  if (planning_team_leader.is_some()) {
+    dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<PlanningTeamLeader>{}, planning_team_leader);
+  };
+  if (marketing_team_leader.is_some()) {
+    dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<MarketingTeamLeader>{}, marketing_team_leader);
+  };
 
   transfer::freeze_object(past_class);
 }
