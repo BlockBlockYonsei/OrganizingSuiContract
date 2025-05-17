@@ -101,25 +101,26 @@ public (package) fun delete_recruitment_and_add_members(
   current_class.members.append(addresses);
 }
 
-public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
+public (package) fun request_to_join(current_class: &mut CurrentClass, ctx: &TxContext){
+  assert!(current_class.recruitment.is_some(), 303333);
   // if member 이미 있으면 안 됨. 하지만 일단 테스트용으로
-  class.members.push_back(ctx.sender())
+  current_class.recruitment.borrow_mut().addresses.push_back(ctx.sender());
 }
 
-public (package) fun add_executive_member<MemberType: store>(class: &mut CurrentClass, member: address) {
-  assert!(!dynamic_field::exists_(&class.id, AddExecutiveMemberKey<MemberType>{}), E_MEMBER_TYPE_ALREADY_EXIST);
-  dynamic_field::add(&mut class.id, AddExecutiveMemberKey<MemberType>{}, member);
-  class.members.push_back(member);
+public (package) fun add_executive_member<MemberType: store>(current_class: &mut CurrentClass, member: address) {
+  assert!(!dynamic_field::exists_(&current_class.id, AddExecutiveMemberKey<MemberType>{}), E_MEMBER_TYPE_ALREADY_EXIST);
+  dynamic_field::add(&mut current_class.id, AddExecutiveMemberKey<MemberType>{}, member);
+  current_class.members.push_back(member);
 }
 
-public (package) fun request_to_close_current_club<MemberType: store>(class: &mut CurrentClass) {
+public (package) fun request_to_close_current_club<MemberType: store>(current_class: &mut CurrentClass) {
   assert!( type_name::get<MemberType>() == type_name::get<President>()
     || type_name::get<MemberType>() == type_name::get<VicePresident>()
     || type_name::get<MemberType>() == type_name::get<Treasurer>()
   , E_NOT_PRESIDENT_EXECUTIVE_MEMBER_TYPE);
 
-  assert!(!dynamic_field::exists_(&class.id, CloseCurrentClubKey<MemberType>{}), E_ALREADY_CLOSED);
-  dynamic_field::add(&mut class.id, CloseCurrentClubKey<MemberType>{}, 0);
+  assert!(!dynamic_field::exists_(&current_class.id, CloseCurrentClubKey<MemberType>{}), E_ALREADY_CLOSED);
+  dynamic_field::add(&mut current_class.id, CloseCurrentClubKey<MemberType>{}, 0);
 }
 
 #[allow(lint(freeze_wrapped))]

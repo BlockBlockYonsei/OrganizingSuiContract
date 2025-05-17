@@ -123,7 +123,7 @@ entry fun apply_to_join_club(
   ctx: &TxContext
   ){
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
-    assert!(current_class.recruitment().is_none() , E_CLUB_NOT_OPENED);
+    assert!(current_class.recruitment().is_some() , E_CLUB_NOT_OPENED);
     
     current_class.request_to_join(ctx);
 }
