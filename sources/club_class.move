@@ -6,6 +6,7 @@ use sui::dynamic_field;
 
 use blockblock::executive_member::{President, VicePresident, Treasurer, PlanningTeamLeader, MarketingTeamLeader};
 use sui::event;
+use std::address;
 
 const E_NOT_PRESIDENT_EXECUTIVE_MEMBER_TYPE: u64 = 1;
 const E_ALREADY_CLOSED: u64 = 2;
@@ -89,7 +90,7 @@ public (package) fun create_member_recruitment(
   current_class.recruitment.fill(member_recruitment);
 }
 
-public (package) fun delete_member_recruitment_and_add_members(
+public (package) fun delete_recruitment_and_add_members(
   current_class: &mut CurrentClass, 
 ){
   assert!(current_class.recruitment.is_some(), 303333);
@@ -100,14 +101,15 @@ public (package) fun delete_member_recruitment_and_add_members(
   current_class.members.append(addresses);
 }
 
+public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
+  // if member 이미 있으면 안 됨. 하지만 일단 테스트용으로
+  class.members.push_back(ctx.sender())
+}
+
 public (package) fun add_executive_member<MemberType: store>(class: &mut CurrentClass, member: address) {
   assert!(!dynamic_field::exists_(&class.id, AddExecutiveMemberKey<MemberType>{}), E_MEMBER_TYPE_ALREADY_EXIST);
   dynamic_field::add(&mut class.id, AddExecutiveMemberKey<MemberType>{}, member);
   class.members.push_back(member);
-}
-
-public (package) fun request_to_join(class: &mut CurrentClass, ctx: &TxContext){
-  class.members.push_back(ctx.sender())
 }
 
 public (package) fun request_to_close_current_club<MemberType: store>(class: &mut CurrentClass) {
@@ -161,6 +163,11 @@ public (package) fun members(class: &CurrentClass): vector<address> {
 }
 public (package) fun blockblock_ys(class: &CurrentClass): ID {
   class.blockblock_ys
+}
+
+public (package) fun get_recruitment_addresses(class: &CurrentClass): vector<address> {
+  let addresses = &class.recruitment.borrow().addresses;
+  *addresses
 }
 
 public (package) fun recruitment(class: &CurrentClass): &Option<MemberRecruitment> {

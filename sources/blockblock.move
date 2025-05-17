@@ -53,6 +53,9 @@ entry fun invite_executive_member<MemberType: store>(
   ){
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
+    assert!(type_name::get<MemberType>() != type_name::get<President>()
+      && type_name::get<MemberType>() != type_name::get<PlanningTeamMember>()
+      && type_name::get<MemberType>() != type_name::get<MarketingTeamMember>(), 40404);
 
     let ticket = executive_member::new_ticket<MemberType>(current_class.class(), ctx);
     ticket.tranfer_ticket(recipient);
@@ -87,8 +90,6 @@ entry fun confirm_executive_member_ticket<MemberType: store>(
     assert!(executive_member::is_executive_member_type<MemberType>(), E_NOT_EXE_COMMIT_TYPE);
 
     let member_address = ticket.member_address().extract();
-    assert!(type_name::get<MemberType>() != type_name::get<PlanningTeamMember>()
-      && type_name::get<MemberType>() != type_name::get<MarketingTeamMember>(), 40404);
 
     current_class.add_executive_member<MemberType>(member_address);
 
@@ -133,15 +134,15 @@ entry fun end_club_recruitment_and_grant_member_caps(
     assert!(object::id(blockblock_ys) == current_class.blockblock_ys(), E_NOT_BLCKBLCK_ID);
     assert!(current_class.class() == president_cap.club_class(), E_NOT_CURRENT_CLASS);
 
-    current_class.delete_member_recruitment_and_add_members();
-
-    current_class.members().do_ref!<address,_>(
+    current_class.get_recruitment_addresses().do_ref!<address,_>(
       |a| {
       let cap = blockblock_member::new(current_class.class(), ctx); 
       let member_address = *a;
       cap.transfer(member_address);
       }
     );
+
+    current_class.delete_recruitment_and_add_members();
 }
 
 // ===========================================
