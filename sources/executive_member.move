@@ -107,7 +107,7 @@ public (package) fun member_address<MemberType: store>(ticket: &ExecutiveMemberT
 }
 
 // ============================= Private Functions
-fun get_struct_name(self: TypeName): String {
+public (package) fun get_struct_name(self: TypeName): String {
     let ascii_colon: u8 = 58;
     let ascii_less_than: u8 = 60;
     let ascii_greater_than: u8 = 62;

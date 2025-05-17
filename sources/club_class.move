@@ -4,9 +4,8 @@ module blockblock::club_class;
 use std::type_name;
 use sui::dynamic_field;
 
-use blockblock::executive_member::{President, VicePresident, Treasurer, PlanningTeamLeader, MarketingTeamLeader};
+use blockblock::executive_member::{President, VicePresident, Treasurer, PlanningTeamLeader, MarketingTeamLeader, get_struct_name};
 use sui::event;
-use std::address;
 
 const E_NOT_PRESIDENT_EXECUTIVE_MEMBER_TYPE: u64 = 1;
 const E_ALREADY_CLOSED: u64 = 2;
@@ -38,7 +37,7 @@ public struct MemberRecruitment has store {
 
 // =============================== Event
 
-public struct CreateNewClass has copy, drop {
+public struct NewClassCreated has copy, drop {
   blockblock_ys: ID,
   class_id: ID,
   class: u64,
@@ -47,9 +46,9 @@ public struct CreateNewClass has copy, drop {
 
 // ============================= Action Key
 
-public struct AddExecutiveMemberKey<phantom MemberType: store> has store, drop, copy {}
+public struct ExecutiveMemberKey<phantom MemberType: store> has store, drop, copy {}
 
-public struct CloseCurrentClubKey<phantom PresidentExecutiveMemberType: store> has store, drop, copy {}
+public struct FinalizingCurrentClubKey<phantom PresidentExecutiveMemberType: store> has store, drop, copy {}
 
 
 // ============================= Mutable Public Package Functions
@@ -67,7 +66,7 @@ public (package) fun new(
     recruitment: option::none()
   };
 
-  event::emit(CreateNewClass{
+  event::emit(NewClassCreated{
     blockblock_ys : blockblock_ys_id,
     class_id: object::id(&current_class),
     class: current_class.class,
@@ -108,8 +107,8 @@ public (package) fun request_to_join(current_class: &mut CurrentClass, ctx: &TxC
 }
 
 public (package) fun add_executive_member<MemberType: store>(current_class: &mut CurrentClass, member: address) {
-  assert!(!dynamic_field::exists_(&current_class.id, AddExecutiveMemberKey<MemberType>{}), E_MEMBER_TYPE_ALREADY_EXIST);
-  dynamic_field::add(&mut current_class.id, AddExecutiveMemberKey<MemberType>{}, member);
+  assert!(!dynamic_field::exists_(&current_class.id, ExecutiveMemberKey<MemberType>{}), E_MEMBER_TYPE_ALREADY_EXIST);
+  dynamic_field::add(&mut current_class.id, ExecutiveMemberKey<MemberType>{}, member);
   current_class.members.push_back(member);
 }
 
@@ -119,8 +118,8 @@ public (package) fun request_to_close_current_club<MemberType: store>(current_cl
     || type_name::get<MemberType>() == type_name::get<Treasurer>()
   , E_NOT_PRESIDENT_EXECUTIVE_MEMBER_TYPE);
 
-  assert!(!dynamic_field::exists_(&current_class.id, CloseCurrentClubKey<MemberType>{}), E_ALREADY_CLOSED);
-  dynamic_field::add(&mut current_class.id, CloseCurrentClubKey<MemberType>{}, 0);
+  assert!(!dynamic_field::exists_(&current_class.id, FinalizingCurrentClubKey<MemberType>{}), E_ALREADY_CLOSED);
+  dynamic_field::add(&mut current_class.id, FinalizingCurrentClubKey<MemberType>{},  get_struct_name(type_name::get<MemberType>()));
 }
 
 #[allow(lint(freeze_wrapped))]
@@ -130,17 +129,17 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
   assert!(current_class.recruitment.is_none(), 10);
 
   assert!(
-    dynamic_field::exists_(&current_class.id, CloseCurrentClubKey<President>{})
-    && dynamic_field::exists_(&current_class.id, CloseCurrentClubKey<VicePresident>{})
-    && dynamic_field::exists_(&current_class.id, CloseCurrentClubKey<Treasurer>{})
+    dynamic_field::exists_(&current_class.id, FinalizingCurrentClubKey<President>{})
+    && dynamic_field::exists_(&current_class.id, FinalizingCurrentClubKey<VicePresident>{})
+    && dynamic_field::exists_(&current_class.id, FinalizingCurrentClubKey<Treasurer>{})
     , E_PRESIDENT_EXECUTIVE_MEMBERS_DID_NOT_CLOSE
   );
   let mut current_class = current_class;
-  let president = dynamic_field::remove<AddExecutiveMemberKey<President>, address>(&mut current_class.id, AddExecutiveMemberKey<President>{});
-  let vice_president = dynamic_field::remove<AddExecutiveMemberKey<VicePresident>, address>(&mut current_class.id, AddExecutiveMemberKey<VicePresident>{});
-  let treasurer = dynamic_field::remove<AddExecutiveMemberKey<Treasurer>, address>(&mut current_class.id, AddExecutiveMemberKey<Treasurer>{});
-  let planning_team_leader = dynamic_field::remove<AddExecutiveMemberKey<PlanningTeamLeader>, address>(&mut current_class.id, AddExecutiveMemberKey<PlanningTeamLeader>{});
-  let marketing_team_leader = dynamic_field::remove<AddExecutiveMemberKey<MarketingTeamLeader>, address>(&mut current_class.id, AddExecutiveMemberKey<MarketingTeamLeader>{});
+  let president = dynamic_field::remove<ExecutiveMemberKey<President>, address>(&mut current_class.id, ExecutiveMemberKey<President>{});
+  let vice_president = dynamic_field::remove<ExecutiveMemberKey<VicePresident>, address>(&mut current_class.id, ExecutiveMemberKey<VicePresident>{});
+  let treasurer = dynamic_field::remove<ExecutiveMemberKey<Treasurer>, address>(&mut current_class.id, ExecutiveMemberKey<Treasurer>{});
+  let planning_team_leader = dynamic_field::remove<ExecutiveMemberKey<PlanningTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<PlanningTeamLeader>{});
+  let marketing_team_leader = dynamic_field::remove<ExecutiveMemberKey<MarketingTeamLeader>, address>(&mut current_class.id, ExecutiveMemberKey<MarketingTeamLeader>{});
 
   let mut past_class = PastClass {
     id: object::new(ctx),
@@ -149,11 +148,11 @@ public (package) fun convert_current_class_to_past_class(current_class: CurrentC
     class_obj: current_class
   };
 
-  dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<President>{}, president);
-  dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<VicePresident>{}, vice_president);
-  dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<Treasurer>{}, treasurer);
-  dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<PlanningTeamLeader>{}, planning_team_leader);
-  dynamic_field::add(&mut past_class.id, AddExecutiveMemberKey<MarketingTeamLeader>{}, marketing_team_leader);
+  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<President>{}, president);
+  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<VicePresident>{}, vice_president);
+  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<Treasurer>{}, treasurer);
+  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<PlanningTeamLeader>{}, planning_team_leader);
+  dynamic_field::add(&mut past_class.id, ExecutiveMemberKey<MarketingTeamLeader>{}, marketing_team_leader);
 
   transfer::freeze_object(past_class);
 }
