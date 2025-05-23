@@ -13,6 +13,30 @@ Officially closing the current class or activity term
 ### Transfer Club Presidency
 Smart contract facilitates seamless and secure transfer of authority between current and future president
 
+## Quick Start
+### Publishing contract
+``` bash
+git clone https://github.com/BlockBlockYonsei/OrganizingSuiContract.git
+cd OrganizingSuiContract
+
+// after finishing publish copy Package ID and BlockblockYonsei object ID
+sui client publish
+```
+### Running OrganizingUI
+``` bash
+git clone https://github.com/BlockBlockYonsei/OrganizingUI.git
+cd OrganizingUI
+
+// Update PAKCAGE_ID
+vi src/Contants.ts
+
+yarn install
+npm run dev
+```
+#### src/Constants.ts
+export const ORIGINAL_PACKAGE_ID = "{YOUR_PACKAGE_ID}";
+export const UPGRADED_PACKAGE_ID = "{YOUR_PACKAGE_ID}";
+export const BLOCKBLOCK_YONSEI = "{YOUR_PACKAGE_BLOCKBLOCK_YONSEI_OBJECT_ID}";
 
 ## Technical Architecture
 <img width="1636" alt="image" src="https://github.com/user-attachments/assets/191249a6-d4d8-4a0d-b383-2a765e8a237a" />
